@@ -56,6 +56,7 @@ public class MySQLEmbedded {
             String sqlInsert = SQLBuilder.buildInsertQuery(FSUtil.readPropertyValue("db_schema"), tableNameTarget,
                     Stream.of(LogColumnNames.values()).map(Enum::name).collect(Collectors.toList()));
             System.out.println("Generated sql insert query: " + sqlInsert);
+            System.out.println("Path to file: " + filePathSource);
             try (final BufferedReader br = Files.newBufferedReader(Paths.get(filePathSource));
                  final PreparedStatement preparedStatement = connection.prepareStatement(sqlInsert)) {
                 String fileRow;
@@ -130,11 +131,12 @@ public class MySQLEmbedded {
         return rowCount;
     }
 
-    public List<ActiveIP> findActiveIPForPeriod(LocalDateTime startDate, Duration duration, int reqCount) {
+    public List<ActiveIP> findActiveIPForPeriod(LocalDateTime startDate, String duration, int reqCount) {
         List<ActiveIP> activeIPs = new ArrayList<>();
         LocalDateTime endDate;
         try(Connection connection = getConnection()) {
-            switch (duration) {
+
+            switch (Enum.valueOf(Duration.class, duration.toUpperCase())) {
                 case DAILY:
                     endDate = startDate.plusDays(1);
                     break;
@@ -153,13 +155,13 @@ public class MySQLEmbedded {
             pSt.setInt(3, reqCount);
             ResultSet resultSet = pSt.executeQuery();
             if (resultSet != null) {
-                System.out.println("Find next IP's:");
+                System.out.println("Found next IP's:");
                 while (resultSet.next()) {
                     ActiveIP activeIP = new ActiveIP();
                     activeIP.setIp(resultSet.getString(1));
                     activeIP.setReqCount(resultSet.getInt(2));
                     activeIP.setStartDate(startDate);
-                    activeIP.setDurationType(duration.name());
+                    activeIP.setDurationType(duration);
                     System.out.println(activeIP);
                     activeIPs.add(activeIP);
                 }

@@ -5,12 +5,17 @@ import com.ef.dbinstance.MySQLEmbedded;
 import com.ef.exception.DifferentRowCountInFileAndDBException;
 import com.ef.exception.IncorrectColumnCountInFileException;
 import com.ef.utils.FSUtil;
+import org.apache.commons.cli.CommandLine;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -54,5 +59,38 @@ public class ValidationService {
         }
 
         return res;
+    }
+
+    public void validateCommandLineArgs(CommandLine cmd) {
+        if (StringUtils.isBlank(cmd.getOptionValue("a"))) {
+            throw new RuntimeException("Please specify --accesslog parameter!");
+        }
+
+        if (StringUtils.isBlank(cmd.getOptionValue("s"))) {
+            throw new RuntimeException("Please specify --startDate parameter!");
+        } else {
+            try {
+                LocalDateTime.parse(cmd.getOptionValue("s"), DateTimeFormatter.ofPattern("yyyy-MM-dd.HH:mm:ss"));
+            } catch (DateTimeParseException ex) {
+                throw new RuntimeException("Please double check date format (yyyy-MM-dd.HH:mm:ss)", ex.getCause());
+            }
+        }
+
+        if (StringUtils.isBlank(cmd.getOptionValue("d"))) {
+            throw new RuntimeException("Please specify --duration argument");
+        } else {
+            String duration = cmd.getOptionValue("d");
+            if (!duration.equals("daily") && !duration.equals("hourly")) {
+                throw new RuntimeException("Duration argument could have only 'daily' or 'hourly' values.");
+            }
+        }
+
+        if (StringUtils.isBlank(cmd.getOptionValue("t"))) {
+            throw new RuntimeException("Please specify --threshold parameter!");
+        } else {
+            if (!StringUtils.isNumeric(cmd.getOptionValue("t"))) {
+                throw new RuntimeException("Threshold should be numeric!");
+            }
+        }
     }
 }
